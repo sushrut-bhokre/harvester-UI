@@ -1,0 +1,146 @@
+//@ts-nocheck
+import { CoreStoreSpecifics, CoreStoreConfig } from "@shell/core/types";
+
+import { SteveFactory, steveStoreInit } from "@shell/plugins/steve/index";
+import { PRODUCT_NAME } from "../../config/harvester";
+import getters from "./getters";
+import mutations from "./mutations";
+import actions from "./actions";
+
+const translateString = (str: string, fromDomain: string, toDomain: string): string => {
+  if (typeof str === 'string') {
+    return str.replace(new RegExp(fromDomain, 'g'), toDomain);
+  }
+  return str;
+};
+
+const translateObject = (obj: any, fromDomain: string, toDomain: string): any => {
+  if (!obj || typeof obj !== 'object') {
+    return obj;
+  }
+  try {
+    let json = JSON.stringify(obj);
+    if (json.includes(fromDomain.replace(/\\/g, ''))) {
+      json = json.replace(new RegExp(fromDomain, 'g'), toDomain);
+      return JSON.parse(json);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return obj;
+};
+
+const harvesterFactory = (): CoreStoreSpecifics => {
+  const steveFactory = SteveFactory(null, null);
+
+  steveFactory.getters = { ...steveFactory.getters, ...getters };
+  steveFactory.mutations = { ...steveFactory.mutations, ...mutations };
+  steveFactory.actions = { ...steveFactory.actions, ...actions };
+
+  // Wrap the subscribe action to handle WebSocket messages seamlessly
+  const originalSubscribe = steveFactory.actions.subscribe;
+
+  steveFactory.actions.subscribe = function (ctx: any, ...args: any[]) {
+    const result = originalSubscribe.call(this, ctx, ...args);
+
+    // Intercept WebSocket messages after connection is established
+    const checkAndWrapSocket = () => {
+      if (ctx.state?.socket?.socket?.onmessage) {
+        if (!ctx.state.socket.socket.__harvesterWrapped) {
+          const originalOnMessage = ctx.state.socket.socket.onmessage;
+          ctx.state.socket.socket.__harvesterWrapped = true;
+
+          ctx.state.socket.socket.onmessage = function (event: MessageEvent) {
+            if (event.data && typeof event.data === 'string') {
+              try {
+                let json = event.data;
+                // Translate harvesterhci.io -> zeushci.io in WebSocket messages
+                if (json.includes('harvesterhci.io')) {
+                  json = json.replace(/harvesterhci\.io/g, 'zeushci.io');
+                  const newEvent = new MessageEvent('message', {
+                    data: json,
+                    origin: event.origin,
+                    lastEventId: event.lastEventId,
+                    source: event.source,
+                    ports: event.ports as any,
+                  });
+                  return originalOnMessage.call(this, newEvent);
+                }
+              } catch (e) {
+                // If anything fails, pass through original event
+              }
+            }
+            return originalOnMessage.call(this, event);
+          };
+        }
+      } else {
+        // Retry after a delay if socket isn't ready yet
+        setTimeout(checkAndWrapSocket, 500);
+      }
+    };
+
+    // Start checking for socket
+    setTimeout(checkAndWrapSocket, 100);
+
+    return result;
+  };
+
+  return steveFactory;
+};
+
+const harvesterStoreInit = (store: any, ctx: any) => {
+  // Initialize standard Steve store worker and mechanics
+  steveStoreInit(store, ctx);
+
+  // Safely inject interceptors into the shared $axios instance once
+  if (store.$axios && !store.$axios.__harvesterInterceptorAdded) {
+    store.$axios.__harvesterInterceptorAdded = true;
+
+    // Outgoing requests: zeushci.io -> harvesterhci.io
+    store.$axios.onRequest((config: any) => {
+      if (config?.url && config.url.includes('zeushci.io')) {
+        config.url = config.url.replace(/zeushci\.io/g, 'harvesterhci.io');
+      }
+
+      if (config?.data && typeof config.data === 'object') {
+        try {
+          let json = JSON.stringify(config.data);
+          if (json.includes('zeushci.io')) {
+            json = json.replace(/zeushci\.io/g, 'harvesterhci.io');
+            config.data = JSON.parse(json);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      return config;
+    });
+
+    // Incoming responses: harvesterhci.io -> zeushci.io
+    store.$axios.onResponse((response: any) => {
+      if (response?.data && typeof response.data === 'object') {
+        try {
+          let json = JSON.stringify(response.data);
+          if (json.includes('harvesterhci.io')) {
+            json = json.replace(/harvesterhci\.io/g, 'zeushci.io');
+            response.data = JSON.parse(json);
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      return response;
+    });
+  }
+};
+
+const config: CoreStoreConfig = {
+  namespace: 'harvester',
+  isClusterStore: true
+};
+
+export default {
+  specifics: harvesterFactory(),
+  config,
+  init: harvesterStoreInit
+};

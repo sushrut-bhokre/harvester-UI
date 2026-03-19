@@ -1,0 +1,688 @@
+// Harvester Premium Modern Dashboard Theme
+// Re-engineered for Harvester UI Extension 1.8.0
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    // Core palette - Inspired by the modern dashboard design
+    --harvester-primary: #3182ce;
+    --harvester-primary-glow: rgba(49, 130, 206, 0.4);
+    --harvester-bg: #0b0e14;
+    --harvester-surface: #13171f;
+    --harvester-card-bg: #1a1f29;
+    --harvester-border: #2c3242;
+    --harvester-text: #ffffff;
+    --harvester-text-muted: #8e95a5;
+    --harvester-sidebar-width: 260px;
+
+    // Custom Accents for Resource Gauges
+    --accent-host: #3182ce;
+    --accent-vm: #805ad5;
+    --accent-network: #dd6b20;
+    --accent-image: #38a169;
+    --accent-volume: #3182ce;
+    --accent-disk: #d53f8c;
+
+    // Status colors
+    --harvester-success: #48bb78;
+    --harvester-warning: #ecc94b;
+    --harvester-error: #f56565;
+}
+
+// Global Body & App Shell
+body {
+    background: var(--harvester-bg) !important;
+    color: var(--harvester-text) !important;
+    font-family: 'Inter', sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    background: var(--harvester-bg) !important;
+}
+
+header {
+    background: var(--harvester-bg) !important; // Exact background match
+    border-bottom: 1px solid var(--harvester-border) !important;
+    box-shadow: none !important;
+    height: 64px;
+    position: fixed !important;
+    top: 0;
+    right: 0;
+    left: var(--harvester-sidebar-width) !important; // Start after sidebar
+    width: calc(100% - var(--harvester-sidebar-width)) !important;
+    z-index: 100 !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px !important;
+
+
+
+    // Force all internal containers to be transparent to reveal header bg
+    >*,
+    .rd-header-right,
+    .header-buttons,
+    .center-self {
+        background-color: transparent !important;
+        background: transparent !important;
+        border-bottom: none !important;
+    }
+
+    // Remove logo and branding name from navbar
+    .menu-spacer,
+    .product,
+    .header-left,
+    .logo,
+    .side-menu-logo {
+        display: none !important;
+    }
+
+    // Ultra-Aggressive Profile Icon replacement
+    [data-testid="nav_header_showUserMenu"] {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 42px !important;
+        height: 42px !important;
+        font-size: 22px !important;
+        border-radius: 50% !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        border: 1px solid var(--harvester-border) !important;
+        padding: 20px !important;
+        margin: 0 !important;
+        overflow: visible !important;
+
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border-color: var(--harvester-primary) !important;
+        }
+
+        // Nuclear option: Hide all children including img, i, svg
+        &>* {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+        }
+
+        // Inject standard profile symbol
+        &::after {
+            content: '👤' !important;
+            display: block !important;
+            font-size: 22px !important;
+            line-height: 1 !important;
+            color: var(--harvester-text) !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+    }
+
+    .title-area,
+    .cluster,
+    .cluster-name,
+    .product-name {
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: -0.02em;
+        margin-left: 24px;
+        padding-left: 24px !important;
+
+    }
+}
+
+
+
+// User Menu Simplification (Preferences & Account)
+// Target Preferences (2nd div) and Account (3rd div) in the User Menu
+[dropdown-menu-collection] {
+
+    div[dropdown-menu-item]:nth-of-type(2),
+    div[dropdown-menu-item]:nth-of-type(3) {
+        display: none !important;
+    }
+}
+
+
+// Sidebar Navigation
+.side-nav {
+    background-color: var(--harvester-bg) !important;
+    border-right: 1px solid var(--harvester-border) !important;
+    padding-top: 0 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: var(--harvester-sidebar-width) !important;
+    z-index: 101 !important;
+    overflow-y: auto;
+
+    // Sidebar Header / Branding Override
+    // Sidebar Header / Branding Override (Centered with Logo)
+    &::before {
+        content: '⚡ ZEUS';
+        display: flex;
+        align-items: center;
+        justify-content: center; // Center the branding
+        padding: 0;
+        height: 80px; // Slightly taller for premium feel
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--harvester-text);
+        letter-spacing: 4px; // More air
+        border-bottom: 1px solid var(--harvester-border);
+        margin-bottom: 2rem;
+        background: var(--harvester-bg);
+        text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+    }
+
+    // Sidebar Icons Injection
+    .child {
+        margin: 8px 0 !important; // More space between items
+
+        A {
+            font-size: 1.1rem !important; // Bigger text
+            padding: 14px 24px !important; // More clickable area
+            display: flex !important;
+            align-items: center !important;
+            transition: all 0.2s ease;
+
+            &::before {
+                margin-right: 14px !important; // More gap after icon
+                font-size: 1.1rem !important;
+                opacity: 0.8 !important;
+                display: inline-block;
+                width: 24px;
+                text-align: center;
+            }
+        }
+
+        &[data-testid*="dashboard"] A::before {
+            content: '🏠';
+        }
+
+        &[data-testid*="host"] A::before {
+            content: '📁';
+        }
+
+        &[data-testid*="virtual-machine"] A::before {
+            content: '💻';
+        }
+
+        &[data-testid*="volume"] A::before {
+            content: '💾';
+        }
+
+        &[data-testid*="image"] A::before {
+            content: '🖼️';
+        }
+
+        &[data-testid*="network"] A::before {
+            content: '🖧';
+        }
+
+        &[data-testid*="backup"] A::before {
+            content: '🛡️';
+        }
+
+        &[data-testid*="advanced"] A::before {
+            content: '⚙️';
+        }
+    }
+
+    .accordion.group-highlight .header.active,
+    .body .child.router-link-active>a,
+    .accordion-item .child.router-link-exact-active>a,
+    .child.active>a,
+    .nuxt-link-active {
+        background: transparent !important; // Removed background color
+        border: 1px solid var(--harvester-primary) !important; // Added blue border
+        color: var(--harvester-primary) !important;
+        border-radius: 14px !important;
+        margin: 8px 16px !important;
+        padding: 13px 19px !important; // Adjust padding to account for 1px border
+        width: calc(100% - 32px) !important;
+        position: relative;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            height: 50%;
+            width: 4px;
+            background: var(--harvester-primary);
+            border-radius: 0 4px 4px 0;
+        }
+
+        span,
+        i,
+        a {
+            color: var(--harvester-primary) !important;
+            font-weight: 600 !important;
+        }
+    }
+
+    .accordion .header:hover,
+    .child:hover>a {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 12px !important;
+        margin: 4px 12px !important;
+    }
+
+    // Hide resource counts (numbers) from the sidebar
+    .nav-type .count {
+        display: none !important;
+    }
+}
+
+// Main Content Shielding
+main,
+.dashboard-grid,
+.main-layout {
+    //margin-left: var(--harvester-sidebar-width) !important;
+    padding-top: 64px !important; // Space for header
+}
+
+// Dashboard Specific Layout
+section>.row {
+    display: flex;
+    flex-direction: column;
+}
+
+// Summary Row Overrides (The Small Cards)
+.resource-gauges {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 16px;
+    margin-bottom: 40px;
+
+    // Target the ResourceSummary component root
+    &>div {
+
+        // Deep target the SimpleBox inside ResourceSummary
+        .simple-box {
+            background: var(--harvester-surface) !important;
+            border: 1px solid var(--harvester-border) !important;
+            border-radius: 20px !important;
+            padding: 0 !important;
+            height: 120px !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            display: flex !important;
+            flex-direction: column !important;
+
+            &:hover {
+                border-color: var(--harvester-primary) !important;
+                transform: translateY(-6px) !important;
+                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6) !important;
+
+                .content::after {
+                    transform: scale(1.1);
+                }
+            }
+
+            .content {
+                display: grid !important;
+                grid-template-columns: 1fr auto !important;
+                grid-template-rows: auto 1fr !important;
+                gap: 8px;
+                padding: 20px !important;
+                height: 100% !important;
+
+                // Label (Resource Name) - Top Left
+                h3 {
+                    grid-column: 1;
+                    grid-row: 1;
+                    margin: 0 !important;
+                    font-size: 14px !important;
+                    font-weight: 600 !important;
+                    color: var(--harvester-text-muted) !important;
+                    text-transform: capitalize !important;
+                    opacity: 0.8;
+                }
+
+                // Count (Quantity) - Bottom Left
+                h1 {
+                    grid-column: 1;
+                    grid-row: 2;
+                    margin: 0 !important;
+                    font-size: 36px !important;
+                    font-weight: 700 !important;
+                    align-self: end !important;
+                    color: var(--harvester-text) !important;
+                }
+
+                // Inject Boxed Icon - Spans both rows on the right
+                &::after {
+                    grid-column: 2;
+                    grid-row: 1 / span 2;
+                    align-self: center;
+                    width: 54px;
+                    height: 54px;
+                    border-radius: 16px;
+                    display: flex !important;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 24px;
+                    transition: transform 0.3s ease;
+                }
+
+                .warnings {
+                    display: none !important;
+                }
+            }
+        }
+
+        // Mapping (Order from Photo 2: Hosts, VMs, Networks, Images, Volumes, Disks)
+        &:nth-child(1) .simple-box .content::after {
+            content: '📁';
+            background: rgba(49, 130, 206, 0.15);
+            color: #3182ce;
+            border: 1px solid rgba(49, 130, 206, 0.3);
+        }
+
+        &:nth-child(2) .simple-box .content::after {
+            content: '💻';
+            background: rgba(128, 90, 213, 0.15);
+            color: #805ad5;
+            border: 1px solid rgba(128, 90, 213, 0.3);
+        }
+
+        &:nth-child(3) .simple-box .content::after {
+            content: '🖧';
+            background: rgba(221, 107, 32, 0.15);
+            color: #dd6b20;
+            border: 1px solid rgba(221, 107, 32, 0.3);
+        }
+
+        &:nth-child(4) .simple-box .content::after {
+            content: '🖼️';
+            background: rgba(56, 161, 105, 0.15);
+            color: #38a169;
+            border: 1px solid rgba(56, 161, 105, 0.3);
+        }
+
+        &:nth-child(5) .simple-box .content::after {
+            content: '💾';
+            background: rgba(90, 103, 216, 0.15);
+            color: #5a67d8;
+            border: 1px solid rgba(90, 103, 216, 0.3);
+        }
+
+        &:nth-child(6) .simple-box .content::after {
+            content: '💽';
+            background: rgba(213, 63, 140, 0.15);
+            color: #d53f8c;
+            border: 1px solid rgba(213, 63, 140, 0.3);
+        }
+    }
+}
+
+// Hardware Capacity Gauges (Expanded for Screen Fill)
+.hardware-resource-gauges {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 40px !important; // Increased gap
+    margin-top: 40px !important;
+
+    .hardware-resource-gauge {
+        background: var(--harvester-surface) !important;
+        border: 1px solid var(--harvester-border) !important;
+        border-radius: 28px !important; // More rounded
+        padding: 40px !important; // Significant padding
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+        min-height: 320px !important; // Ensure vertical Presence
+
+        // Gauge chart area (HardwareResourceGauge structure)
+        .chart {
+            background-color: transparent !important;
+            border: none !important;
+            margin-bottom: 24px !important;
+
+            h3 {
+                font-size: 1.45rem !important; // Larger title for better presence
+                font-weight: 700 !important;
+                margin: 0 !important;
+                display: flex;
+                align-items: center;
+                color: var(--harvester-text) !important;
+
+                &::before {
+                    margin-right: 12px;
+                    opacity: 0.9;
+                    font-size: 22px;
+                    display: inline-block;
+                }
+            }
+        }
+
+        // Apply icons per gauge based on actual dashboard order (CPU, Memory, Storage)
+        &:nth-child(1) .chart h3::before {
+            content: '🧬'; // CPU / DNA
+            margin-bottom: 20px;
+            color: #805ad5;
+        }
+
+        &:nth-child(2) .chart h3::before {
+            content: '📦'; // Memory / RAM
+            margin-bottom: 20px;
+            color: #dd6b20;
+        }
+
+        &:nth-child(3) .chart h3::before {
+            content: '⚙️'; // Storage / Settings
+            margin-bottom: 20px;
+            color: #3182ce;
+        }
+
+        // Storage
+
+        // Gauge Body
+        .gauge {
+            .gauge-container {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .gauge-label {
+                font-size: 0.85rem !important;
+                font-weight: 500 !important;
+                margin-bottom: 8px !important;
+                display: flex;
+                justify-content: space-between;
+
+                .value {
+                    color: var(--harvester-text) !important;
+                }
+
+                .percentage {
+                    font-weight: 700 !important;
+                }
+            }
+
+            // Restyle Progress Bars
+            .progress {
+                background: rgba(255, 255, 255, 0.05) !important;
+                border-radius: 10px !important;
+                height: 8px !important;
+                overflow: hidden;
+
+                .progress-bar {
+                    border-radius: 10px !important;
+
+                    &.bg-info {
+                        background: #3182ce !important;
+                    }
+
+                    &.bg-success {
+                        background: #38a169 !important;
+                    }
+
+                    &.bg-warning {
+                        background: #d69e2e !important;
+                    }
+
+                    &.bg-danger {
+                        background: #e53e3e !important;
+                    }
+                }
+            }
+
+            // Default progressive colors
+            .progress-bar {
+                background: var(--harvester-primary) !important;
+            }
+        }
+
+        // Specific Colors per Gauge card
+        &:nth-child(1) .progress-bar {
+            background: #3182ce !important;
+            box-shadow: 0 0 10px rgba(49, 130, 206, 0.4);
+        }
+
+        &:nth-child(2) .progress-bar {
+            background: #805ad5 !important;
+            box-shadow: 0 0 10px rgba(128, 90, 213, 0.4);
+        }
+
+        &:nth-child(3) .progress-bar {
+            background: #dd6b20 !important;
+            box-shadow: 0 0 10px rgba(221, 107, 32, 0.4);
+        }
+    }
+}
+
+// Healthy Status Pill
+.status-pill {
+    background: rgba(72, 187, 120, 0.15) !important;
+    color: var(--harvester-success) !important;
+    padding: 2px 8px !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    margin-left: 8px !important;
+    border: 1px solid rgba(72, 187, 120, 0.3) !important;
+}
+
+// Section Headers
+h3 {
+    color: var(--harvester-text-muted) !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1.5px !important;
+    margin-bottom: 16px !important;
+}
+
+// Tabs (Events etc)
+.tabs {
+    border-bottom: 1px solid var(--harvester-border) !important;
+
+    .tab {
+        padding: 12px 24px !important;
+        color: var(--harvester-text-muted) !important;
+        font-weight: 600 !important;
+        border: none !important;
+        position: relative;
+        transition: all 0.2s;
+
+        &.active {
+            color: var(--harvester-primary) !important;
+
+            &::after {
+                content: '';
+                position: absolute;
+                bottom: -1px;
+                left: 0;
+                width: 100%;
+                height: 3px;
+                background: var(--harvester-primary);
+                box-shadow: 0 0 8px var(--harvester-primary-glow);
+            }
+        }
+
+        &:hover:not(.active) {
+            color: var(--harvester-text) !important;
+            background: rgba(255, 255, 255, 0.03);
+        }
+    }
+}
+
+// Tables in Dashboard
+.events {
+    .sortable-table {
+        background: var(--harvester-surface) !important;
+        border-radius: 16px !important;
+        border: 1px solid var(--harvester-border) !important;
+        overflow: hidden;
+
+        thead th {
+            background: rgba(255, 255, 255, 0.02) !important;
+            padding: 16px !important;
+            border-bottom: 1px solid var(--harvester-border) !important;
+        }
+
+        tbody tr {
+            &:hover {
+                background: rgba(255, 255, 255, 0.03) !important;
+            }
+
+            td {
+                padding: 14px 16px !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            }
+        }
+    }
+}
+
+// Login Page Harvester Branding
+.login {
+    background: linear-gradient(135deg, #0d1117 0%, #000000 100%) !important;
+
+    .login-welcome {
+        color: var(--harvester-primary) !important;
+        font-weight: 700 !important;
+        text-shadow: 0 0 15px var(--harvester-primary-glow) !important;
+        letter-spacing: 1px;
+    }
+
+    .landscape {
+        filter: brightness(0.6) saturate(1.2) !important;
+        content: url("/pkg/harvester/zeus_abstract_bg.png") !important;
+        object-fit: cover !important;
+    }
+
+    #submit {
+        background-color: var(--harvester-primary) !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+
+        &:hover {
+            box-shadow: 0 0 20px rgba(49, 130, 206, 0.5) !important;
+        }
+    }
+}
+
+.grafana-graph .external-link {
+    display: none !important;
+}
+
+// Node Detail Page refinement - Hide Labels and Annotations
+.metadata .labels,
+.metadata .annotations,
+.detail-top .labels,
+.detail-top .annotations,
+.labels-and-annotations-empty {
+    display: none !important;
+}
+
+// Remove the mandatory "i" info icon box from Console buttons and other dropdowns
+.vs__actions::after,
+.vs__actions:after {
+    display: none !important;
+    visibility: hidden !important;
+    content: none !important;
+}

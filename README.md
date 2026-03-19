@@ -66,8 +66,10 @@ The core UI logic is built on top of the Rancher Dashboard framework, with custo
 
 ### Install Dependencies
 
+- Note: Download the node modules from the release or use pre-build package (latese.tar.gz)
+
 ```bash
-yarn install
+
 yarn dev
 ```
 ### To run in extended mode with existing zeus deployment use 

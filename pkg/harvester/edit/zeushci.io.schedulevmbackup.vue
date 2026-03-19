@@ -1,0 +1,327 @@
+<script>
+import { mapGetters } from 'vuex';
+import { RadioGroup } from '@components/Form/Radio';
+import { Banner } from '@components/Banner';
+import { LabeledInput } from '@components/Form/LabeledInput';
+import CruResource from '@shell/components/CruResource';
+import Tabbed from '@shell/components/Tabbed';
+import Tab from '@shell/components/Tabbed/Tab';
+import MessageLink from '@shell/components/MessageLink';
+import LabeledSelect from '@shell/components/form/LabeledSelect';
+import CreateEditView from '@shell/mixins/create-edit-view';
+import { isCronValid } from '@pkg/harvester/utils/cron';
+import { PRODUCT_NAME as HARVESTER_PRODUCT } from '@pkg/harvester/config/harvester';
+import { allHash } from '@shell/utils/promise';
+import { HCI } from '../types';
+import { sortBy } from '@shell/utils/sort';
+import { BACKUP_TYPE } from '../config/types';
+import { _EDIT, _CREATE } from '@shell/config/query-params';
+import { isBackupTargetSettingEmpty, isBackupTargetSettingUnavailable } from '@pkg/harvester/utils/setting';
+import CronExpressionEditorModal from '@shell/components/Cron/CronExpressionEditorModal.vue';
+
+export default {
+  name:       'CreateVMSchedule',
+  components: {
+    CruResource,
+    Tabbed,
+    Tab,
+    RadioGroup,
+    LabeledInput,
+    LabeledSelect,
+    MessageLink,
+    Banner,
+    CronExpressionEditorModal
+  },
+
+  mixins: [CreateEditView],
+
+  inheritAttrs: false,
+
+  async fetch() {
+    const hash = await allHash({
+      settings: this.$store.dispatch('harvester/findAll', { type: HCI.SETTING }),
+      vms:      this.$store.dispatch('harvester/findAll', { type: HCI.VM }),
+    });
+
+    this.allVms = hash.vms;
+    this.settings = hash.settings;
+  },
+
+  props: {
+    value: {
+      type:     Object,
+      required: true,
+    },
+    mode: {
+      type:     String,
+      required: true,
+    }
+  },
+
+  data() {
+    if (this.mode === _CREATE) {
+      const defaultNs = this.$store.getters['defaultNamespace'];
+      const vmNamespace = this.$route.query?.vmNamespace || defaultNs;
+      const vmName = this.$route.query?.vmName;
+
+      delete this.value.metadata.annotations;
+      delete this.value.metadata.labels;
+
+      this.value['metadata'] = {
+        namespace: vmNamespace,
+        name:      vmName ? `svmbackup-${ vmName }` : ''
+      };
+
+      if (!this.value.spec) {
+        this.value['spec'] = {
+          cron:       '',
+          retain:     8,
+          maxFailure: 4,
+          vmbackup:   {
+            source: {
+              apiGroup: 'kubevirt.io',
+              kind:     'VirtualMachine',
+              name:     vmName || ''
+            },
+            type: BACKUP_TYPE.BACKUP
+          }
+        };
+      }
+    }
+
+    return { settings: [], showModel: false };
+  },
+
+  computed: {
+    ...mapGetters({ t: 'i18n/t' }),
+
+    backupTargetResource() {
+      return this.settings.find( (O) => O.id === 'backup-target');
+    },
+    isEmptyValue() {
+      return isBackupTargetSettingEmpty(this.backupTargetResource);
+    },
+    canUpdate() {
+      return this?.backupTargetResource?.canUpdate;
+    },
+    errorMessage() {
+      return this.backupTargetResource?.errMessage;
+    },
+    canSave() {
+      return !!this.value.spec.cron && isCronValid(this.value.spec.cron) &&
+      !!this.value.metadata.name &&
+      !!this.value.metadata.namespace &&
+      !!this.value.spec.retain &&
+      !!this.value.spec.maxFailure;
+    },
+    isBackupTargetUnAvailable() {
+      return this.value.spec.vmbackup.type === BACKUP_TYPE.BACKUP && isBackupTargetSettingUnavailable(this.backupTargetResource);
+    },
+    vmOptions() {
+      const nsVmList = this.$store.getters['harvester/all'](HCI.VM).filter((vm) => vm.metadata.namespace === this.value.metadata.namespace);
+      const vmObjectLists = nsVmList.map((obj) => ({
+        label: obj.nameDisplay,
+        value: obj.name,
+      }));
+
+      return sortBy(vmObjectLists, 'label');
+    },
+
+    namespaces() {
+      const allNamespaces = this.$store.getters['allNamespaces'];
+      const out = sortBy(
+        allNamespaces.map((obj) => {
+          return {
+            label: obj.nameDisplay,
+            value: obj.id,
+          };
+        }),
+        'label'
+      );
+
+      return out;
+    },
+    toBackupTargetSetting() {
+      const { cluster } = this.$router?.currentRoute?.params || {};
+
+      return {
+        name:   `${ HARVESTER_PRODUCT }-c-cluster-resource-id`,
+        params: {
+          resource: `${ HCI.SETTING }`,
+          cluster,
+          id:       'backup-target'
+        },
+        query: { mode: _EDIT }
+      };
+    },
+    scheduleTypeOptions() {
+      return [BACKUP_TYPE.BACKUP, BACKUP_TYPE.SNAPSHOT];
+    }
+  },
+
+  watch: {
+    'value.metadata.namespace'() {
+      this.value.spec.vmbackup.source.name = '';
+    },
+    'value.spec.vmbackup.source.name'(neu) {
+      this.value.metadata.name = `svm${ this.value.spec.vmbackup.type }-${ neu }`;
+    }
+  },
+
+  methods: {
+    onTypeChange(newType) {
+      this.value.metadata.name = `svm${ newType }-${ this.value.spec.vmbackup.source.name }`;
+    },
+    validateFailure(count) {
+      if (this.value.spec.retain && count > this.value.spec.retain) {
+        this.value.spec['maxFailure'] = this.value.spec.retain;
+      }
+    },
+    openModal() {
+      this.showModel = true;
+    },
+  },
+};
+</script>
+
+<template>
+  <CruResource
+    :done-route="doneRoute"
+    :resource="value"
+    :mode="mode"
+    :errors="errors"
+    :apply-hooks="applyHooks"
+    :validation-passed="canSave"
+    @finish="save"
+    @error="e=>errors=e"
+  >
+    <div class="banner">
+      <Banner
+        v-if="isBackupTargetUnAvailable"
+        color="error"
+      >
+        <MessageLink
+          v-if="isEmptyValue"
+          :to="toBackupTargetSetting"
+          :target="_blank"
+          prefix-label="zeus.backup.message.noSetting.prefix"
+          middle-label="zeus.backup.message.noSetting.middle"
+          suffix-label="zeus.schedule.message.noSetting.suffix"
+        />
+        <MessageLink
+          v-else
+          :to="toBackupTargetSetting"
+          prefix-label="zeus.backup.message.errorTip.prefix"
+          middle-label="zeus.backup.message.errorTip.middle"
+        >
+          <template #suffix>
+            {{ t('zeus.backup.message.errorTip.suffix') }} {{ errorMessage }}
+          </template>
+        </MessageLink>
+      </Banner>
+      <div class="mb-30">
+        <RadioGroup
+          v-model:value="value.spec.vmbackup.type"
+          name="model"
+          :options="scheduleTypeOptions"
+          :labels="[t('zeus.schedule.type.backup'), t('zeus.schedule.type.snapshot')]"
+          :disabled="isEdit || isView"
+          :mode="mode"
+          row
+          @update:value="onTypeChange"
+        />
+      </div>
+      <div class="row mb-30">
+        <div class="col span-6">
+          <LabeledSelect
+            v-model:value="value.metadata.namespace"
+            :label="t('nameNsDescription.namespace.label')"
+            :options="namespaces"
+            required
+            :disabled="isBackupTargetUnAvailable || isEdit || isView"
+          />
+        </div>
+        <div class="col span-6">
+          <LabeledSelect
+            v-model:value="value.spec.vmbackup.source.name"
+            :label="t('zeus.schedule.virtualMachine.title')"
+            :placeholder="t('zeus.schedule.virtualMachine.placeholder')"
+            :options="vmOptions"
+            required
+            :disabled="isBackupTargetUnAvailable || isEdit || isView"
+          />
+        </div>
+      </div>
+    </div>
+    <Tabbed
+      v-bind="$attrs"
+      class="mt-15"
+      :side-tabs="true"
+    >
+      <Tab
+        name="basics"
+        :label="t('zeus.network.tabs.basics')"
+        :weight="99"
+        class="bordered-table"
+      >
+        <div class="cronEditor">
+          <LabeledInput
+            v-model:value="value.spec.cron"
+            class="mb-30"
+            type="cron"
+            required
+            :mode="mode"
+            :label="t('zeus.schedule.cron.label')"
+            placeholder="0 * * * *"
+            :disabled="isBackupTargetUnAvailable || isView"
+          />
+          <button
+            class="editCronBtn btn role-primary"
+            @click="openModal"
+          >
+            {{ t('zeus.schedule.cron.editButton') }}
+          </button>
+          <CronExpressionEditorModal
+            v-model:show="showModel"
+            v-model:cron-expression="value.spec.cron"
+          />
+        </div>
+        <LabeledInput
+          v-model:value.number="value.spec.retain"
+          class="mb-30"
+          :min="2"
+          :max="250"
+          type="number"
+          :label="t('zeus.schedule.retain.label')"
+          required
+          :tooltip="t('zeus.schedule.retain.tooltip')"
+          :disabled="isBackupTargetUnAvailable || isView"
+        />
+        <LabeledInput
+          v-model:value.number="value.spec.maxFailure"
+          class="mb-30"
+          :min="2"
+          type="number"
+          :label="t('zeus.schedule.maxFailure.label')"
+          required
+          :tooltip="t('zeus.schedule.maxFailure.tooltip')"
+          :disabled="isBackupTargetUnAvailable || isView"
+          @input="validateFailure"
+        />
+      </Tab>
+    </Tabbed>
+  </CruResource>
+</template>
+
+<style lang="scss" scoped>
+.cronEditor {
+  align-items: center;
+  display: flex;
+}
+
+.editCronBtn {
+  margin-bottom: 30px;
+  margin-left: 10px;
+  height: 60px;
+}
+</style>

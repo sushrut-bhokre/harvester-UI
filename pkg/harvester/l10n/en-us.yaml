@@ -12,6 +12,29 @@ login:
   welcome: Welcome to ZEUS
   howdy: Welcome to ZEUS
 
+setup:
+  currentPassword: Bootstrap Password
+  confirmPassword: Confirm New Password
+  defaultPassword:
+    intro: 'It looks like this is your first time visiting ZEUS; if you pre-set your own bootstrap password, enter it here.  Otherwise a random one has been generated for you.  To find it:<br/><br/>'
+    dockerPrefix: 'For a "docker run" installation:'
+    dockerPs: 'Find your container ID with <code>docker ps</code>, then run:'
+    dockerSuffix: ""
+    helmPrefix: 'For a Helm installation, run:'
+    helmSuffix: ""
+  eula: By checking the box, you accept the <a href="https://www.suse.com/licensing/eula/download/suse_end_user_license_agreement_june_2024.pdf" target="_blank" rel="noopener noreferrer nofollow">End User License Agreement & Terms & Conditions</a>
+  newPassword: New Password
+  newUserSetPassword: The first order of business is to set a strong password. We suggest using this random one generated just for you, but enter your own if you like.
+  serverUrl:
+    label: Server URL
+    skip: Skip
+    tip: What URL should be used for this ZEUS installation? All the nodes in your clusters will need to be able to reach this.
+  setPassword: The first order of business is to set a strong password for the default <code>{username}</code> user. We suggest using this random one generated just for you, but enter your own if you like.
+  useManual: Set a specific password to use
+  useRandom: Use a randomly generated password
+  copyRandom: Copy random password to clipboard
+  welcome: Welcome to ZEUS!
+
 unsupported:
   serverVersion: 'Current version: <code>{serverVersion}</code>'
   description: 'ZEUS cluster version greater or equal to 1.3.0.'
@@ -1005,6 +1028,7 @@ zeus:
       kubernetes: Kubernetes
       monitoringChart: Monitoring Chart
       zeusChart: 'ZEUS Chart'
+      harvesterChart: 'ZEUS Chart'
       success: Success
       fail: Fail
       ongoing: 'On-going'
